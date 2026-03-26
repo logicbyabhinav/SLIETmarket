@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SLIET Market — Your Bids</title>
+  <link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="marketplace.html" class="navbar-brand">
+    <span class="material-symbols-outlined brand-icon">hub</span>
+    <span class="brand-name">SLIET Market</span>
+  </a>
+  <div class="navbar-tabs">
+    <a href="marketplace.html" class="nav-tab">Market</a>
+    <a href="listings.html" class="nav-tab">Your Listings</a>
+    <a href="bids.html" class="nav-tab active">Your Bids</a>
+  </div>
+  <div class="navbar-right">
+    <span class="navbar-username" id="navUsername">...</span>
+    <div class="avatar" id="navAvatar">?</div>
+    <a href="#" class="btn-logout" onclick="logout()">Logout</a>
+  </div>
+  <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+</nav>
+<nav class="mobile-menu" id="mobileMenu">
+  <a href="marketplace.html">Market</a>
+  <a href="listings.html">Your Listings</a>
+  <a href="bids.html" class="active">Your Bids</a>
+  <div class="menu-divider"></div>
+  <a href="#" onclick="logout()">Logout</a>
+</nav>
+
+<main class="page-content">
+  <div style="margin-bottom:clamp(20px,3vw,36px);">
+    <h1 class="txt-h1" style="margin-bottom:6px;">Your Bids</h1>
+    <p class="txt-body">Track your active offers and connect with sellers to finalise campus deals.</p>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px;" id="bidsList"></div>
+
+  <!-- Seller contact reveal modal -->
+  <div class="modal-overlay" id="contactModal">
+    <div class="modal" style="max-width:400px;">
+      <div class="modal-header">
+        <div>
+          <h3 class="txt-h3">Seller Contact</h3>
+          <p class="txt-muted">Your offer was accepted!</p>
+        </div>
+        <button class="modal-close" onclick="closeModal('contactModal')"><span class="material-symbols-outlined">close</span></button>
+      </div>
+      <div class="modal-body">
+        <div style="background:var(--bg-input);border-radius:var(--r);padding:16px;text-align:center;">
+          <div class="avatar" style="margin:0 auto 12px;width:56px;height:56px;font-size:20px;" id="contactAvatar"></div>
+          <div style="font-size:16px;font-weight:700;color:var(--txt-1);margin-bottom:4px;" id="contactName"></div>
+          <div class="txt-muted" style="margin-bottom:14px;" id="contactHostel"></div>
+          <div style="display:flex;align-items:center;justify-content:center;gap:8px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);padding:12px;">
+            <span class="material-symbols-outlined txt-accent">phone</span>
+            <span style="font-family:'Syne',sans-serif;font-weight:700;font-size:18px;color:var(--txt-1);" id="contactPhone"></span>
+          </div>
+        </div>
+        <p class="txt-muted" style="text-align:center;margin-top:12px;font-size:12px;">Contact the seller to arrange pickup and payment.</p>
+        <button class="btn btn-primary btn-full" style="margin-top:16px;" onclick="closeModal('contactModal')">Got it!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-card" style="margin-top:clamp(32px,5vw,56px);">
+    <h3 class="txt-h2" style="margin-bottom:10px;">Looking for more deals?</h3>
+    <p class="txt-body" style="max-width:420px;margin:0 auto 24px;">Explore hundreds of listings from fellow students. From tech to textbooks, the best campus deals are a click away.</p>
+    <a href="marketplace.html" class="btn btn-primary btn-lg" style="text-decoration:none;">
+      <span class="material-symbols-outlined">storefront</span>
+      Browse Marketplace
+    </a>
+  </div>
+</main>
+
+<div class="toast-wrap" id="toastWrap"></div>
+<script src="js/app.js"></script>
+<script type="module" src="js/guard.js"></script>
+<script type="module" src="js/bids.js"></script>
+</body>
+</html>
