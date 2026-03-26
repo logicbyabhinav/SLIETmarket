@@ -1,162 +1,330 @@
-SLIET Market Project Documentation
-This documentation serves as the primary technical reference for the SLIET Market repository. The application is a peer-to-peer marketplace designed for students to trade items within a localized campus environment. It utilizes a serverless architecture powered by Firebase.
+# 🛒 SLIET Market
 
-Project File Structure
-The project follows a modular frontend-focused structure to ensure separation of concerns between styling, database configuration, and business logic.
+> A peer-to-peer student marketplace exclusively for SLIET campus — buy, sell, and bid on items with your college email.
+
+![Firebase](https://img.shields.io/badge/Firebase-10.12.0-orange?logo=firebase)
+![Firestore](https://img.shields.io/badge/Firestore-Realtime-blue?logo=google)
+![Vanilla JS](https://img.shields.io/badge/JavaScript-ES%20Modules-yellow?logo=javascript)
+![Auth](https://img.shields.io/badge/Auth-@sliet.ac.in%20only-green)
+
+---
+
+## 📌 What is SLIET Market?
+
+SLIET Market is a campus-exclusive, serverless web application that allows students of **Sant Longowal Institute of Engineering and Technology** to list items for sale and place offers on each other's listings — all within a secure, verified student community.
+
+Only `@sliet.ac.in` email addresses can register. No outsiders. No spam.
+
+---
+
+## ✨ Features
+
+- 🔐 **Gated Authentication** — Sign up and sign in restricted to `@sliet.ac.in` emails only
+- ✉️ **Email Verification** — Firebase sends a verification link before any access is granted
+- 🏪 **Real-time Marketplace** — Listings update live using Firestore `onSnapshot` — no refresh needed
+- 🏷️ **Two Selling Modes** — Sellers choose between **Fixed Price** (contact only) or **Open to Offers** (bidding)
+- 💸 **Offer / Bidding System** — Buyers submit offers with a price and optional message
+- ✅ **Atomic Deal Closure** — Accepting an offer marks the item as sold and auto-rejects all other bids in one batch write
+- 📞 **Privacy-first Contact Reveal** — Seller's phone number is only visible to the accepted buyer, never stored in offer documents
+- 🖼️ **Image Upload** — Up to 3 product photos uploaded to Firebase Storage per listing
+- 📱 **Responsive UI** — Works on mobile and desktop with a hamburger nav
+
+---
+
+## 🗂️ Project Structure
 
 ```
 /slietmarket
 │
 ├── /css
-│   └── style.css           (Global UI variables, component layouts, and card designs)
+│   ├── style.css          ← Global UI: variables, cards, modals, badges, toasts
+│   └── auth.css           ← Login/Signup page specific styles
 │
 ├── /js
-│   ├── app.js              (Application entry point and global UI initializers)
-│   ├── auth.js             (User registration, login, and profile creation logic)
-│   ├── bids.js             (Buyer dashboard: tracking and managing sent offers)
-│   ├── firebase.js         (Firebase SDK initialization and service exports)
-│   ├── guard.js            (Route protection: redirects unauthorized users to login)
-│   ├── listings.js         (Seller dashboard: accepting bids and atomic relisting)
-│   └── market.js           (Marketplace feed: real-time listings, search, and filters)
+│   ├── firebase.js        ← Firebase SDK init; exports auth, db, storage
+│   ├── app.js             ← Shared helpers: toast, modal open/close, hamburger menu
+│   ├── auth.js            ← Sign up, sign in, email verification, session check
+│   ├── guard.js           ← Auth guard for protected pages; sets window.currentUser
+│   ├── market.js          ← Marketplace feed: real-time listings, search, filter, offer submission
+│   ├── listings.js        ← Seller dashboard: publish listing, image upload, accept/reject offers
+│   └── bids.js            ← Buyer dashboard: track sent offers, withdraw, reveal seller contact
 │
-├── bids.html               (Interface for viewing personal bidding history)
-├── index.html              (Landing page and navigation hub)
-├── listings.html           (Seller-specific dashboard for item management)
-├── marketplace.html        (Public browsing interface for all active items)
-└── welcome.html            (Onboarding or post-login redirect page)
+├── index.html             ← Login & Sign Up page
+├── welcome.html           ← Post-registration welcome screen
+├── marketplace.html       ← Browse all active listings
+├── listings.html          ← Seller's dashboard
+└── bids.html              ← Buyer's bid tracker
 ```
-Authentication Workflow
-The system implements Firebase Authentication (Email/Password) to secure student transactions.
 
-Registration: New users sign up via auth.js. Upon successful authentication, a corresponding document is created in the /users Firestore collection to store profile metadata such as the display name.
+---
 
-Session Management: The guard.js script runs on every protected page. It checks the current authentication state; if no valid user is detected, it forces a redirect to the index.html/login page.
+## 🔄 How It Works
 
-Access Control: Security is maintained by checking the request.auth.uid against the sellerId or buyerId fields in the database.
+### 1. Authentication Flow
 
-Database Structure (Cloud Firestore)
-The application uses a NoSQL document-based structure. Data is organized into three core collections.
+```
+Sign Up → Email Verification Link → Verified → Marketplace
+Sign In → Check emailVerified → Redirect to Marketplace
+```
 
-1. Users (/users)
-Document ID: User UID
+- `auth.js` handles registration using `createUserWithEmailAndPassword`
+- On signup, a user profile document is saved to Firestore (`/users/{uid}`) with name, email, and phone
+- `sendEmailVerification()` sends a link to the student's `@sliet.ac.in` inbox
+- Sign in is **blocked** until the email is verified — `emailVerified` is checked on every login
+- `guard.js` runs on all inner pages (`marketplace`, `listings`, `bids`) and redirects unverified or logged-out users back to `index.html`
 
-Fields: name, email, createdAt
+---
 
-2. Listings (/listings)
-Fields: title, description, price, category, condition, images (Base64), sellerId, sellerName, status (active/sold), createdAt
+### 2. Listing a Product (`listings.js`)
 
-3. Offers (/offers)
-Fields: listingId, listingTitle, sellerId, buyerId, buyerName, offerPrice, status (pending/accepted/rejected), message, createdAt
+```
+Fill Form → Select Images → Click Publish
+         ↓
+   Upload images to Firebase Storage (parallel)
+         ↓
+   Save listing document to Firestore /listings
+         ↓
+   Appears live on Marketplace instantly
+```
 
-Data Management Logic
-Offer Submission and Integrity
-To prevent database clutter, the submission logic in market.js includes a pre-flight check. Users are restricted from placing multiple bids on a single item if they already have an active offer. This ensures a clean data stream for the seller.
+- Seller fills in title, category, condition, description, and price
+- Chooses selling type: **Fixed Price** or **Open to Offers**
+- Up to 3 images are uploaded to Firebase Storage under `listings/{userId}/`
+- Listing document saved to `/listings` with status `active`
+- The seller's own listings page uses `onSnapshot` for real-time updates
 
-Atomic Deal Closure (Batch Writes)
-When a seller accepts an offer in listings.js, the system utilizes a writeBatch to ensure data consistency. As a single atomic transaction:
+---
 
-The listing status is updated to sold.
+### 3. Browsing & Searching (`market.js`)
 
-The winning offer status is updated to accepted.
+- Marketplace loads all `status == 'active'` listings ordered by `createdAt DESC` using `onSnapshot`
+- Search bar filters by title and description in real time (client-side)
+- Category chips filter by item type
+- Clicking a card opens a detail modal with full info and action buttons
+- If the item belongs to the logged-in user → shows "This is your listing" (no self-purchase)
+- **Fixed Price** items → show seller's email on click
+- **Open to Offers** items → show an inline offer form
 
-All other pending offers for that specific listing are automatically updated to rejected.
+---
 
-Dispute and Relisting Flow
-The relisting function is designed to handle cancelled deals. When triggered:
+### 4. Placing an Offer (`market.js → submitOffer`)
 
-The listing status is reverted to active.
+```
+Buyer opens item → Clicks "Make an Offer" → Enters price + message
+         ↓
+   Anti-spam check: already have a pending/accepted offer for this item?
+         ↓ (if not)
+   Create document in /offers with status: 'pending'
+```
 
-The buyerId and soldAt fields are cleared.
+- Before submitting, `submitOffer()` queries Firestore to check if the buyer already has a `pending` or `accepted` offer on the same listing — preventing duplicate bids
+- Offer document stores: `listingId`, `listingTitle`, `sellerId`, `sellerName`, `buyerId`, `buyerName`, `buyerEmail`, `offerPrice`, `message`, `status`, `createdAt`
+- **Note:** Seller's phone number is intentionally NOT stored here for privacy
 
-All existing offers (including previously accepted ones) are set to rejected, resetting the bidding ecosystem for that item.
+---
 
-Firestore Security Rules
-The following rules govern read/write access to ensure students can only modify their own data:
+### 5. Accepting an Offer (`listings.js → acceptOffer`)
 
-JavaScript
+This is the most critical operation — handled as an **atomic batch write**:
+
+```
+Seller clicks Accept on an offer
+         ↓
+   writeBatch:
+   ├── listings/{id}  →  status: 'sold', buyerId: winner, soldAt: now
+   └── offers/{id}    →  status: 'accepted'
+         ↓
+   Second batch: all remaining pending offers → status: 'rejected'
+         ↓
+   Buyer's bids page auto-updates via onSnapshot
+```
+
+- Uses `writeBatch()` so the listing and accepted offer are updated atomically — no partial state
+- A second batch then rejects all other pending offers for that listing
+- Once sold, the listing disappears from the marketplace automatically
+
+---
+
+### 6. Viewing & Managing Bids (`bids.js`)
+
+- Buyer's bids page listens in real time using `onSnapshot` — status changes appear instantly
+- **Pending** bids show a **Withdraw** button
+- **Accepted** bids show a **View Contact** button
+- **Rejected** bids show a **Remove** button (deletes the document)
+
+**Seller Contact Reveal (Privacy Flow):**
+
+```
+Buyer clicks "View Contact"
+         ↓
+   Fetch offer document → verify status == 'accepted'
+         ↓
+   Fetch seller's /users/{uid} document
+         ↓
+   Display name + email + phone in modal
+```
+
+The seller's phone number lives **only** in their `/users` profile document. It is never stored in the offer. Only a buyer with an `accepted` offer can trigger this fetch — enforced both in JS logic and Firestore Security Rules.
+
+---
+
+## 🗃️ Firestore Data Structure
+
+### `/users/{uid}`
+| Field | Type | Description |
+|---|---|---|
+| `uid` | string | Firebase Auth UID |
+| `firstName` | string | First name |
+| `lastName` | string | Last name |
+| `name` | string | Full name (firstName + lastName) |
+| `email` | string | College email |
+| `phone` | string | Phone number (private) |
+| `joinedAt` | string | ISO timestamp |
+
+### `/listings/{listingId}`
+| Field | Type | Description |
+|---|---|---|
+| `title` | string | Item title |
+| `category` | string | Item category |
+| `condition` | string | New / Good / Fair / Poor |
+| `description` | string | Item description |
+| `price` | number | Asking price (₹) |
+| `sellingType` | string | `'fixed'` or `'offers'` |
+| `images` | array | Firebase Storage URLs (max 3) |
+| `sellerId` | string | Seller's UID |
+| `sellerName` | string | Seller's display name |
+| `sellerEmail` | string | Seller's email |
+| `status` | string | `'active'` or `'sold'` |
+| `buyerId` | string / null | UID of accepted buyer |
+| `soldAt` | timestamp / null | When the deal was closed |
+| `createdAt` | timestamp | Server timestamp |
+
+### `/offers/{offerId}`
+| Field | Type | Description |
+|---|---|---|
+| `listingId` | string | Reference to the listing |
+| `listingTitle` | string | Denormalized title for display |
+| `listingImage` | string | Denormalized image URL for bids page |
+| `listingPrice` | number | Denormalized asking price for bids page |
+| `sellerId` | string | Seller's UID |
+| `sellerName` | string | Seller's display name |
+| `buyerId` | string | Buyer's UID |
+| `buyerName` | string | Buyer's display name |
+| `buyerEmail` | string | Buyer's email |
+| `offerPrice` | number | Buyer's offered price (₹) |
+| `message` | string | Optional message from buyer |
+| `status` | string | `'pending'` / `'accepted'` / `'rejected'` |
+| `createdAt` | timestamp | Server timestamp |
+
+---
+
+## 🔒 Firestore Security Rules
+
+```js
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // User profiles: Read/Write only by the owner
+    // User profiles: only the owner can read/write their own data
     match /users/{userId} {
       allow read, write: if request.auth.uid == userId;
     }
 
-    // Listings: Public read, but only the seller can update/delete
+    // Listings: any verified user can read/create;
+    // only the seller can update or delete their own listing
     match /listings/{listingId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth != null;
+      allow read:          if request.auth != null;
+      allow create:        if request.auth != null;
       allow update, delete: if request.auth.uid == resource.data.sellerId;
     }
 
-    // Offers: Private between buyer and seller; seller manages status
+    // Offers: only the buyer and seller involved can read;
+    // any verified user can create; only the seller can update status
     match /offers/{offerId} {
-      allow read: if request.auth != null && 
-                  (request.auth.uid == resource.data.buyerId || 
-                   request.auth.uid == resource.data.sellerId);
+      allow read:   if request.auth != null &&
+                    (request.auth.uid == resource.data.buyerId ||
+                     request.auth.uid == resource.data.sellerId);
       allow create: if request.auth != null;
-      allow update: if request.auth != null && 
+      allow update: if request.auth != null &&
                     request.auth.uid == resource.data.sellerId;
     }
   }
 }
-Image Storage Configuration
-Due to standard tier constraints on Cloud Storage buckets, the project utilizes Base64 encoding for product images.
+```
 
-Processing: Images are compressed and converted to Base64 strings on the client side before submission.
+---
 
-Storage: Encoded strings are stored directly within the listing document in Firestore.
+## 🔥 Required Firestore Indexes
 
-Optimization: The system limits document size to ensure stay within the 1MB Firestore limit.
+These composite indexes must be created in the Firebase Console under **Firestore → Indexes**:
 
-Firestore rules work on a Request vs. Resource logic. Every time your code tries to touch a document, the "Security Guard" checks two things:
+| Collection | Fields | Order |
+|---|---|---|
+| `listings` | `status`, `createdAt` | ASC, DESC |
+| `listings` | `sellerId`, `createdAt` | ASC, DESC |
+| `offers` | `buyerId`, `createdAt` | ASC, DESC |
+| `offers` | `listingId`, `status`, `offerPrice` | ASC, ASC, DESC |
+| `offers` | `listingId`, `buyerId`, `status` | ASC, ASC, ASC |
 
-Request: Who is asking? (request.auth.uid)
+> Without these, Firestore will throw an error and provide a direct link to create the missing index automatically.
 
-Resource: What does the data currently say? (resource.data.sellerId)
+---
 
-1. The Listing Protection Logic
-In your listings rules, we use the following logic:
-allow update, delete: if request.auth.uid == resource.data.sellerId;
+## 🚀 Running Locally
 
-Scenario: Abhinav wants to delete a listing.
+**1. Clone the repository**
+```bash
+git clone https://github.com/logicbyabhinav/sliet-market.git
+cd sliet-market
+```
 
-The Check: The Guard looks at the listing document. If the sellerId field inside that document is Abhinav_123 and his login ID is also Abhinav_123, the action is Allowed.
+**2. Start a local HTTP server** (required — `file://` protocol breaks Firebase Auth)
 
-Prevention: If Aryan tries to send a "Delete" command for Abhinav's item, the IDs won't match, and Firestore returns a Permission Denied error instantly.
+Using Node.js:
+```bash
+npx serve .
+```
+Then open `http://localhost:3000` in your browser.
 
-2. The Private Offer Logic
-Offers are sensitive because they contain private prices and messages. We use a Logical OR (||) to ensure privacy:
-allow read: if (request.auth.uid == resource.data.buyerId || request.auth.uid == resource.data.sellerId);
+Or using Python:
+```bash
+python -m http.server 8000
+```
+Then open `http://localhost:8000`.
 
-The Check: This rule ensures that a "Third Party" (like Satyam) cannot see the price Abhinav offered to Aryan.
+**3. Firebase Setup**
 
-Result: Only the two people involved in the potential deal have the "Key" to read that specific document.
+- Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
+- Enable **Authentication → Email/Password**
+- Enable **Firestore Database**
+- Enable **Storage**
+- Copy your config into `js/firebase.js`
+- Add `localhost` and `127.0.0.1` to **Authentication → Settings → Authorized Domains**
+- Apply the Security Rules from above
+- Create the Firestore Indexes from the table above
 
-Data Management and Status Updates
-The rules also control what can be changed, not just who can change it.
+---
 
-The Seller’s Authority
-In the offers collection, we have a specific rule:
-allow update: if request.auth.uid == resource.data.sellerId;
+## 🛠️ Tech Stack
 
-This is critical for your "Accept" and "Relist" functions. Even though Abhinav (the buyer) created the offer, he cannot change the status to "Accepted" himself. Only the Seller has the authority to flip that switch.
+| Layer | Technology |
+|---|---|
+| Frontend | Vanilla HTML, CSS, JavaScript (ES Modules) |
+| Authentication | Firebase Auth (Email/Password) |
+| Database | Cloud Firestore (NoSQL, real-time) |
+| File Storage | Firebase Storage |
+| Hosting | Any static host (Firebase Hosting, Vercel, Netlify) |
+| Build Tool | None — CDN imports only |
 
-Why the "Relist" and "Accept" Functions were failing before
-When we were debugging the "Aryan vs. Abhimanyu" incident, the "Missing or Insufficient Permissions" error happened because of Rule-Query Alignment:
+---
 
-The Rule Requirement: The rule says: "You can only update if you are the seller."
+## 👤 Author
 
-The Code Mistake: Initially, our code asked for "All pending offers for Item A."
+**Abhinav Kishore**
+GitHub: [@logicbyabhinav](https://github.com/logicbyabhinav)
 
-The Security Conflict: The Guard blocked this because the query was too broad. It didn't "prove" it was only looking for the seller's items.
+---
 
-The Fix: By adding where('sellerId', '==', currentUser.uid) to your JavaScript, the code "proved" to the Guard that it was only touching authorized data, allowing the batch to pass.
+## 📄 License
 
-Summary of Rules Working
-Authentication: Every rule starts with request.auth != null, ensuring no anonymous "guest" can mess with the market.
-
-Ownership: The resource.data check ensures that once an ID is stamped on a piece of data, only that ID can modify it.
-
-Atomic Integrity: During a Batch Write, the rules check every single document in the batch. If even one "Reject" update for a losing bidder fails the ownership test, the entire transaction is cancelled to prevent data corruption.
+This project is for educational and campus use. Not licensed for commercial redistribution.
