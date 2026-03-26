@@ -209,6 +209,7 @@ window.publishListing = async function() {
 function loadMyListings() {
   const user = window.currentUser;
   if (!user) return;
+  
 
   // Query: listings WHERE sellerId == my UID, ordered by newest first
   const q = query(
