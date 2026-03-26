@@ -1,4 +1,4 @@
-# 🛒 SLIET Market
+#  SLIET Market
 
 > A peer-to-peer student marketplace exclusively for SLIET campus — buy, sell, and bid on items with your college email.
 
@@ -9,7 +9,7 @@
 
 ---
 
-## 📌 What is SLIET Market?
+##  What is SLIET Market?
 
 SLIET Market is a campus-exclusive, serverless web application that allows students of **Sant Longowal Institute of Engineering and Technology** to list items for sale and place offers on each other's listings — all within a secure, verified student community.
 
@@ -17,21 +17,21 @@ Only `@sliet.ac.in` email addresses can register. No outsiders. No spam.
 
 ---
 
-## ✨ Features
+##  Features
 
-- 🔐 **Gated Authentication** — Sign up and sign in restricted to `@sliet.ac.in` emails only
-- ✉️ **Email Verification** — Firebase sends a verification link before any access is granted
-- 🏪 **Real-time Marketplace** — Listings update live using Firestore `onSnapshot` — no refresh needed
-- 🏷️ **Two Selling Modes** — Sellers choose between **Fixed Price** (contact only) or **Open to Offers** (bidding)
-- 💸 **Offer / Bidding System** — Buyers submit offers with a price and optional message
-- ✅ **Atomic Deal Closure** — Accepting an offer marks the item as sold and auto-rejects all other bids in one batch write
-- 📞 **Privacy-first Contact Reveal** — Seller's phone number is only visible to the accepted buyer, never stored in offer documents
-- 🖼️ **Image Upload** — Up to 3 product photos uploaded to Firebase Storage per listing
-- 📱 **Responsive UI** — Works on mobile and desktop with a hamburger nav
+-  **Gated Authentication** — Sign up and sign in restricted to `@sliet.ac.in` emails only
+-  **Email Verification** — Firebase sends a verification link before any access is granted
+-  **Real-time Marketplace** — Listings update live using Firestore `onSnapshot` — no refresh needed
+-  **Two Selling Modes** — Sellers choose between **Fixed Price** (contact only) or **Open to Offers** (bidding)
+-  **Offer / Bidding System** — Buyers submit offers with a price and optional message
+-  **Atomic Deal Closure** — Accepting an offer marks the item as sold and auto-rejects all other bids in one batch write
+-  **Privacy-first Contact Reveal** — Seller's phone number is only visible to the accepted buyer, never stored in offer documents
+-  **Image Upload** — Up to 3 product photos uploaded to Firebase Storage per listing
+-  **Responsive UI** — Works on mobile and desktop with a hamburger nav
 
 ---
 
-## 🗂️ Project Structure
+##  Project Structure
 
 ```
 /slietmarket
@@ -58,7 +58,7 @@ Only `@sliet.ac.in` email addresses can register. No outsiders. No spam.
 
 ---
 
-## 🔄 How It Works
+##  How It Works
 
 ### 1. Authentication Flow
 
@@ -168,7 +168,7 @@ The seller's phone number lives **only** in their `/users` profile document. It 
 
 ---
 
-## 🗃️ Firestore Data Structure
+##  Firestore Data Structure
 
 ### `/users/{uid}`
 | Field | Type | Description |
@@ -218,7 +218,7 @@ The seller's phone number lives **only** in their `/users` profile document. It 
 
 ---
 
-## 🔒 Firestore Security Rules
+##  Firestore Security Rules
 
 ```js
 rules_version = '2';
@@ -254,7 +254,7 @@ service cloud.firestore {
 
 ---
 
-## 🔥 Required Firestore Indexes
+##  Required Firestore Indexes
 
 These composite indexes must be created in the Firebase Console under **Firestore → Indexes**:
 
@@ -270,7 +270,7 @@ These composite indexes must be created in the Firebase Console under **Firestor
 
 ---
 
-## 🚀 Running Locally
+##  Running Locally
 
 **1. Clone the repository**
 ```bash
@@ -318,13 +318,13 @@ Then open `http://localhost:8000`.
 
 ---
 
-## 👤 Author
+##  Author
 
 **Abhinav Kishore**
 GitHub: [@logicbyabhinav](https://github.com/logicbyabhinav)
 
 ---
 
-## 📄 License
+##  License
 
 This project is for educational and campus use. Not licensed for commercial redistribution.
