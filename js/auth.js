@@ -47,66 +47,6 @@ onAuthStateChanged(auth, (user) => {
   }
   // If user is null (not logged in), do nothing — stay on login page
 });
-onAuthStateChanged(auth, (user) => {
-  if(user && user.emailVerified === 'abhinav_2411002@sliet.ac.in' || 'abhimanyu_2411004@sliet.ac.in' || 'aryan_2411001@sliet.ac.in')
-  {
-    showToast("Welcome Admin! Initializing Server Maintenance", 'info');
-    manualCleanup();}
-});
-
-async function manualCleanup() {
-  const now = new Date();
-  // Calculate the 90-day cutoff
-  const ninetyDaysAgo = new Date();
-  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-  
-  try {
-    showToast('Scanning for expired data...', 'info');
-
-    // 1. Find all expired listings
-    const listingQuery = query(
-      collection(db, 'listings'), 
-      where('createdAt', '<', ninetyDaysAgo)
-    );
-    const listingSnapshot = await getDocs(listingQuery);
-
-    if (listingSnapshot.empty) {
-      showToast('No expired data found.', 'info');
-      return;
-    }
-
-    const batch = writeBatch(db);
-    
-    // 2. For each expired listing, find its associated offers
-    for (const listingDoc of listingSnapshot.docs) {
-      const listingId = listingDoc.id;
-      
-      // Add the listing itself to the delete batch
-      batch.delete(listingDoc.ref);
-
-      // Find all offers linked to this specific listing
-      const offerQuery = query(
-        collection(db, 'offers'), 
-        where('listingId', '==', listingId)
-      );
-      const offerSnapshot = await getDocs(offerQuery);
-      
-      // Add every associated offer to the delete batch
-      offerSnapshot.forEach((offerDoc) => {
-        batch.delete(offerDoc.ref);
-      });
-    }
-
-    // 3. Commit all deletes at once
-    await batch.commit();
-    
-    showToast(`Cleanup successful! Removed ${listingSnapshot.size} listings and related offers.`, 'success');
-  } catch (error) {
-    console.error("Cleanup Error:", error);
-    showToast('Cleanup failed. Check console for details.', 'error');
-  }
-}
-
 
 // ── SIGN UP ─────────────────────────────────────────────────────
 // Called when student clicks "Create Account"
