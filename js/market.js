@@ -229,13 +229,12 @@ window.openDetail = function (itemId) {
       <div style="text-align:center;padding:10px;background:var(--bg-input);border-radius:var(--r);">
         <p style="font-size:13px;color:var(--txt-3);">This is your listing</p>
       </div>`;
-  } else if (currentItem.sellingType === "fixed") {
-    // Fixed price: just show the seller's email
+  } else if (currentItem.sellingType === 'fixed') {
     actionsEl.innerHTML = `
-      <button class="btn btn-primary btn-full"
-        onclick="showToast('Seller email: ${currentItem.sellerEmail}', 'info')">
-        <span class="material-symbols-outlined">mail</span>
-        Contact Seller
+      <button class="btn btn-primary btn-full" id="buyRequestBtn"
+        onclick="sendFixedRequest()">
+        <span class="material-symbols-outlined">shopping_cart</span>
+        Request to Buy (₹${Number(currentItem.price).toLocaleString('en-IN')})
       </button>`;
   } else {
     // Open to offers: show "Make an Offer" button
@@ -327,6 +326,60 @@ window.submitOffer = async function () {
     btn.textContent = "Submit Offer";
     btn.disabled = false;
   }
+};
+
+window.sendFixedRequest = async function() {
+    const btn = document.getElementById('buyRequestBtn');
+    
+    if (!window.currentUser) {
+        showToast('Please login to buy', 'error');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Sending Request...';
+
+    try {
+        // 1. Anti-Spam Check (Same as your bid logic)
+        const qCheck = query(
+            collection(db, 'offers'),
+            where('listingId', '==', currentItem.id),
+            where('buyerId', '==', window.currentUser.uid),
+            where('status', 'in', ['pending', 'accepted'])
+        );
+        const existingSnap = await getDocs(qCheck);
+        if (!existingSnap.empty) {
+            showToast('Request already sent!', 'error');
+            return;
+        }
+
+        // 2. Create the "Silent Bid" at full price
+        await addDoc(collection(db, 'offers'), {
+            listingId:     currentItem.id,
+            listingTitle:  currentItem.title,
+            listingPrice:  currentItem.price,
+            listingImage:  currentItem.images?.[0] || '',
+            sellerId:      currentItem.sellerId,
+            sellerName:    currentItem.sellerName,
+            buyerId:       window.currentUser.uid,
+            buyerName:     window.currentProfile.name,
+            buyerEmail:    window.currentUser.email,
+            offerPrice:    Number(currentItem.price), // Full price
+            message:       "I am interested in buying this at the listed price.",
+            status:        'pending',
+            createdAt:     serverTimestamp()
+        });
+
+        showToast('Request sent to seller!', 'success');
+        closeModal('detailModal');
+
+    } catch (error) {
+        console.error('Request error:', error);
+        showToast('Failed to send request', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Request to Buy';
+    }
 };
 
 // ── CHIP FILTER ──────────────────────────────────────────────────
