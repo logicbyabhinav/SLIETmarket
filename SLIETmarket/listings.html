@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SLIET Market — Your Listings</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .list-form-grid { display:grid; grid-template-columns:1fr 2fr; gap:clamp(16px,2.5vw,28px); }
+    @media(max-width:768px) { .list-form-grid { grid-template-columns:1fr; } }
+    .left-col { display:flex; flex-direction:column; gap:16px; }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="marketplace.html" class="navbar-brand">
+    <span class="material-symbols-outlined brand-icon">hub</span>
+    <span class="brand-name">SLIET Market</span>
+  </a>
+  <div class="navbar-tabs">
+    <a href="marketplace.html" class="nav-tab">Market</a>
+    <a href="listings.html" class="nav-tab active">Your Listings</a>
+    <a href="bids.html" class="nav-tab">Your Bids</a>
+  </div>
+  <div class="navbar-right">
+    <span class="navbar-username" id="navUsername">...</span>
+    <div class="avatar" id="navAvatar">?</div>
+    <a href="#" class="btn-logout" onclick="logout()">Logout</a>
+  </div>
+  <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+</nav>
+<nav class="mobile-menu" id="mobileMenu">
+  <a href="marketplace.html">Market</a>
+  <a href="listings.html" class="active">Your Listings</a>
+  <a href="bids.html">Your Bids</a>
+  <div class="menu-divider"></div>
+  <a href="#" onclick="logout()">Logout</a>
+</nav>
+
+<main class="page-content">
+
+  <!-- LIST AN ITEM SECTION -->
+  <section style="margin-bottom:clamp(32px,5vw,56px);">
+    <div style="margin-bottom:clamp(20px,3vw,32px);">
+      <h1 class="txt-h1" style="margin-bottom:6px;">List a Product</h1>
+      <p class="txt-body">Turn your campus gear into cash. Quick and easy.</p>
+    </div>
+
+    <div class="list-form-grid">
+      <!-- Left: Upload + Tips -->
+      <div class="left-col">
+        <div class="upload-box" onclick="document.getElementById('fileInput').click()">
+          <span class="material-symbols-outlined upload-icon">add_a_photo</span>
+          <strong style="font-size:14px;color:var(--txt-1);">Upload Product Photos</strong>
+          <p>Drag and drop or <span>browse</span></p>
+          <p style="font-size:11px;color:var(--txt-3);margin-top:4px;">Up to 3 images</p>
+          <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="previewImages(this)"/>
+          <div class="upload-previews" id="previews"></div>
+        </div>
+        <div class="tips-box">
+          <div class="tips-title">
+            <span class="material-symbols-outlined" style="color:var(--warning);">lightbulb</span>
+            Quick Tips
+          </div>
+          <div class="tip-item"><span class="tip-num">01</span><span>Use natural lighting — buyers trust clear photos more.</span></div>
+          <div class="tip-item"><span class="tip-num">02</span><span>Be honest about condition to avoid disputes later.</span></div>
+          <div class="tip-item"><span class="tip-num">03</span><span>Competitive pricing gets you 3x faster deals.</span></div>
+        </div>
+      </div>
+
+      <!-- Right: Form fields -->
+      <div class="card" style="padding:clamp(16px,2.5vw,28px);">
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="input-group form-full">
+            <label class="input-label" for="fTitle">Product Title</label>
+            <input class="input" id="fTitle" type="text" placeholder="e.g. Engineering Mathematics Textbook – 4th Ed"/>
+          </div>
+          <div class="form-row">
+            <div class="input-group">
+              <label class="input-label" for="fCat">Category</label>
+              <select class="input" id="fCat">
+                <option value="">Select Category</option>
+                <option>Books &amp; Notes</option>
+                <option>Electronics &amp; Gadgets</option>
+                <option>Cycles &amp; Transport</option>
+                <option>Hostel &amp; Furniture</option>
+                <option>Clothing</option>
+                <option>Sports &amp; Fitness</option>
+                <option>Stationery</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label class="input-label" for="fCond">Condition</label>
+              <select class="input" id="fCond">
+                <option value="">Select Condition</option>
+                <option>New / Unopened</option>
+                <option>Like New</option>
+                <option>Gently Used</option>
+                <option>Fair Condition</option>
+              </select>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Selling Type</label>
+            <div class="toggle-group">
+              <button class="toggle-opt active" id="togFixed" onclick="setToggle('fixed')">Fixed Price</button>
+              <button class="toggle-opt" id="togOffers" onclick="setToggle('offers')">Open to Offers</button>
+            </div>
+          </div>
+          <div class="input-group form-full">
+            <label class="input-label" for="fDesc">About Product</label>
+            <textarea class="input" id="fDesc" rows="3" placeholder="Mention features, usage duration, and why you are selling..."></textarea>
+          </div>
+          <div class="input-group form-full">
+            <label class="input-label" for="fPrice">Set Your Price</label>
+            <div class="price-input-wrap">
+              <span class="price-prefix">₹</span>
+              <input class="input" id="fPrice" type="number" placeholder="0"/>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full btn-lg" onclick="publishListing()">
+            <span class="material-symbols-outlined">publish</span>
+            Publish Listing
+          </button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MY LISTINGS SECTION -->
+  <section>
+    <div class="section-header">
+      <h2 class="txt-h2">My Listings</h2>
+      <a href="marketplace.html" class="txt-accent" style="font-size:13px;font-weight:600;display:flex;align-items:center;gap:4px;">
+        View Marketplace <span class="material-symbols-outlined" style="font-size:16px;">arrow_forward</span>
+      </a>
+    </div>
+    <div class="card-grid-sm" id="myListingsGrid"></div>
+  </section>
+
+</main>
+
+<!-- Offers Dialog -->
+<div class="modal-overlay" id="offersModal">
+  <div class="modal" style="max-width:480px;">
+    <div class="modal-header">
+      <div>
+        <h3 class="txt-h3" id="offerModalTitle"></h3>
+        <p class="txt-muted" id="offerModalPrice"></p>
+      </div>
+      <button class="modal-close" onclick="closeModal('offersModal')">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div id="offersList"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+<script src="js/app.js"></script>
+<script type="module" src="js/guard.js"></script>
+<script type="module" src="js/listings.js"></script>
+<script>
+let sellingType = 'fixed';
+
+function setToggle(type) {
+  sellingType = type;
+  document.getElementById('togFixed').classList.toggle('active', type==='fixed');
+  document.getElementById('togOffers').classList.toggle('active', type==='offers');
+}
+
+function previewImages(input) {
+  const container = document.getElementById('previews');
+  container.innerHTML = '';
+  const files = Array.from(input.files).slice(0,3);
+  files.forEach((file, i) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const div = document.createElement('div');
+      div.className = 'upload-preview-item';
+      div.innerHTML = `<img src="${e.target.result}" alt="Preview"/><div class="upload-preview-remove" onclick="this.parentElement.remove()">✕</div>`;
+      container.appendChild(div);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+/*
+const MY_LISTINGS = [
+  { id:1, title:'Advanced Calculus – Miller', price:1250, status:'active', badge:'Books', img:'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=300&q=60', listedAgo:'2 days ago', offers:[
+    { name:'Ankit S.', initials:'AS', price:1100, msg:'Can meet at hostel 3 gate' },
+    { name:'Riya P.',  initials:'RP', price:1200, msg:'Urgent need' }
+  ]},
+  { id:2, title:'HP Omen 15 – RTX 3060',   price:42000, status:'active', badge:'Electronics', img:'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=300&q=60', listedAgo:'5 days ago', offers:[
+    { name:'Sumit K.', initials:'SK', price:40000, msg:'Willing to pay full if charger included' }
+  ]},
+  { id:3, title:'Sony WH-CH510 Wireless',   price:2500, status:'sold', badge:'Electronics', img:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=300&q=60', listedAgo:'Sold Nov 12', offers:[] },
+  { id:4, title:'Cycle – Hero Sprint 26T',  price:3800, status:'active', badge:'Cycles', img:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=300&q=60', listedAgo:'1 week ago', offers:[] },
+];
+*/
+
+function renderMyListings() {
+  const grid = document.getElementById('myListingsGrid');
+  if (!MY_LISTINGS.length) { grid.innerHTML='<p class="txt-muted">No listings yet. List your first item above!</p>'; return; }
+  grid.innerHTML = MY_LISTINGS.map(item => `
+    <article class="card" style="cursor:pointer;${item.status==='sold'?'opacity:.7':''}" onclick="openOffersDialog(${item.id})">
+      <div style="position:relative;aspect-ratio:4/3;overflow:hidden;background:var(--bg-input);">
+        <img src="${item.img}" alt="${item.title}" loading="lazy" style="width:100%;height:100%;object-fit:cover;${item.status==='sold'?'filter:grayscale(1)':''}"/>
+        <span class="badge-img badge-img-left ${item.status==='sold'?'badge-sold':'badge-active'}">${item.status==='sold'?'Sold':'Active'}</span>
+        ${item.offers.length>0?`<span style="position:absolute;top:10px;right:10px;background:var(--warning);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;">${item.offers.length} offer${item.offers.length>1?'s':''}</span>`:''}
+        <div style="position:absolute;bottom:8px;right:8px;background:rgba(15,15,20,.85);padding:4px 10px;border-radius:var(--r-sm);backdrop-filter:blur(8px);">
+          <span class="txt-price" style="font-size:14px;">${item.status==='sold'?'<s style="color:var(--txt-3)">':''}₹${item.price.toLocaleString('en-IN')}${item.status==='sold'?'</s>':''}</span>
+        </div>
+      </div>
+      <div style="padding:10px 12px;">
+        <div class="item-card-title">${item.title}</div>
+        <div class="txt-muted" style="margin-top:3px;">${item.listedAgo}</div>
+      </div>
+    </article>
+  `).join('');
+}
+
+function openOffersDialog(id) {
+  const item = MY_LISTINGS.find(i => i.id===id);
+  if (!item) return;
+  document.getElementById('offerModalTitle').textContent = item.title;
+  document.getElementById('offerModalPrice').textContent = `Asking price: ₹${item.price.toLocaleString('en-IN')}`;
+  const list = document.getElementById('offersList');
+  if (!item.offers.length) {
+    list.innerHTML = `<div style="text-align:center;padding:32px 0;color:var(--txt-3);"><span class="material-symbols-outlined" style="font-size:40px;display:block;margin-bottom:8px;">inbox</span>No offers yet</div>`;
+  } else {
+    list.innerHTML = item.offers.map((o,i) => `
+      <div class="offer-row">
+        <div class="offer-avatar">${o.initials}</div>
+        <div class="offer-info">
+          <div class="offer-name">${o.name}</div>
+          <div class="offer-msg">${o.msg}</div>
+        </div>
+        <div class="offer-price">₹${o.price.toLocaleString('en-IN')}</div>
+        <button class="btn btn-success btn-sm" onclick="acceptOffer(${id},${i})">Accept</button>
+      </div>
+    `).join('');
+  }
+  openModal('offersModal');
+}
+
+function acceptOffer(itemId, offerIdx) {
+  const item = MY_LISTINGS.find(i => i.id===itemId);
+  const offer = item.offers[offerIdx];
+  item.status = 'sold';
+  item.offers = [];
+  showToast(`Deal accepted with ${offer.name}! Contact shared.`,'success');
+  closeModal('offersModal');
+  renderMyListings();
+}
+
+function publishListing() {
+  const title = document.getElementById('fTitle').value.trim();
+  const price = document.getElementById('fPrice').value;
+  const cat   = document.getElementById('fCat').value;
+  if (!title) { showToast('Please enter a product title','error'); return; }
+  if (!cat)   { showToast('Please select a category','error'); return; }
+  if (!price) { showToast('Please enter a price','error'); return; }
+  MY_LISTINGS.unshift({ id:Date.now(), title, price:parseInt(price), status:'active', badge:cat.split(' ')[0], img:'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=300&q=60', listedAgo:'Just now', offers:[] });
+  showToast('Your listing is now live!','success');
+  document.getElementById('fTitle').value = '';
+  document.getElementById('fPrice').value = '';
+  document.getElementById('fDesc').value  = '';
+  document.getElementById('previews').innerHTML = '';
+  renderMyListings();
+}
+
+renderMyListings();
+</script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SLIET Market — Marketplace</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .page-header { margin-bottom:clamp(16px,2.5vw,28px); }
+    .header-row { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:16px; }
+    .item-count { font-size:12px; color:var(--txt-3); margin-bottom:16px; }
+    /* Detail modal two-col */
+    .detail-modal { max-width:680px; }
+    .detail-inner { display:grid; grid-template-columns:1fr 1fr; gap:0; }
+    .detail-img-col { background:var(--bg-input); }
+    .detail-img-col img { width:100%; height:100%; object-fit:cover; }
+    .detail-info-col { padding:24px; display:flex; flex-direction:column; gap:14px; overflow-y:auto; }
+    @media(max-width:580px) { .detail-inner { grid-template-columns:1fr; } .detail-img-col { aspect-ratio:16/9; } }
+    .detail-price { font-family:'Syne',sans-serif; font-weight:800; font-size:clamp(22px,3vw,30px); color:var(--accent); }
+    .detail-seller { display:flex; align-items:center; gap:8px; padding:10px 0; border-top:1px solid var(--border); border-bottom:1px solid var(--border); }
+    .detail-seller-av { width:36px; height:36px; border-radius:50%; background:var(--accent-dim); color:var(--accent); font-family:'Syne',sans-serif; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    /* Offer inline form */
+    .offer-form { display:none; flex-direction:column; gap:10px; padding:12px; background:var(--bg-input); border-radius:var(--r); border:1px solid var(--border); }
+    .offer-form.open { display:flex; }
+  </style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a href="marketplace.html" class="navbar-brand">
+    <span class="material-symbols-outlined brand-icon">hub</span>
+    <span class="brand-name">SLIET Market</span>
+  </a>
+  <div class="navbar-tabs">
+    <a href="marketplace.html" class="nav-tab active">Market</a>
+    <a href="listings.html" class="nav-tab">Your Listings</a>
+    <a href="bids.html" class="nav-tab">Your Bids</a>
+  </div>
+  <div class="navbar-right">
+    <span class="navbar-username" id="navUsername">...</span>
+    <div class="avatar" id="navAvatar">?</div>
+    <a href="#" class="btn-logout" onclick="logout()">Logout</a>
+  </div>
+  <div class="hamburger" id="hamburger"><span></span><span></span><span></span></div>
+</nav>
+
+<!-- Mobile menu -->
+<nav class="mobile-menu" id="mobileMenu">
+  <a href="marketplace.html" class="active">Market</a>
+  <a href="listings.html">Your Listings</a>
+  <a href="bids.html">Your Bids</a>
+  <div class="menu-divider"></div>
+  <a href="#" onclick="logout()">Logout</a>
+</nav>
+
+<!-- PAGE CONTENT -->
+<main class="page-content">
+  <div class="page-header">
+    <div class="header-row">
+      <div>
+        <h1 class="txt-h1" style="margin-bottom:6px;">Campus Marketplace</h1>
+        <p class="txt-body">Find textbooks, cycles, and hostel essentials from fellow SLIETians.</p>
+      </div>
+      <div class="search-wrap">
+        <span class="material-symbols-outlined search-icon-el">search</span>
+        <input class="input" id="searchInput" type="text" placeholder="Search for electronics, books..." oninput="filterCards()"/>
+      </div>
+    </div>
+    <!-- Category chips -->
+    <div class="chips-row" id="chipsRow">
+      <button class="chip active" onclick="setChip(this,'All')">All Items</button>
+      <button class="chip" onclick="setChip(this,'Books & Notes')">Books &amp; Notes</button>
+      <button class="chip" onclick="setChip(this,'Electronics & Gadgets')">Electronics</button>
+      <button class="chip" onclick="setChip(this,'Cycles & Transport')">Cycles</button>
+      <button class="chip" onclick="setChip(this,'Hostel & Furniture')">Hostel</button>
+      <button class="chip" onclick="setChip(this,'Clothing')">Clothing</button>
+      <button class="chip" onclick="setChip(this,'Sports & Fitness')">Sports</button>
+      <button class="chip" onclick="setChip(this,'Stationery')">Stationery</button>
+    </div>
+  </div>
+
+  <p class="item-count" id="itemCount"></p>
+
+  <!-- Cards Grid -->
+  <div class="card-grid" id="cardGrid"></div>
+</main>
+
+<!-- Item Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal detail-modal">
+    <div class="detail-inner">
+      <div class="detail-img-col">
+        <img id="detailImg" src="" alt=""/>
+      </div>
+      <div class="detail-info-col">
+        <button class="modal-close" style="align-self:flex-end;" onclick="closeModal('detailModal')">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+        <div>
+          <span class="badge badge-active" id="detailCat" style="margin-bottom:8px;"></span>
+          <h2 class="txt-h2" id="detailTitle"></h2>
+        </div>
+        <div class="detail-price" id="detailPrice"></div>
+        <div class="detail-seller">
+          <div class="detail-seller-av" id="detailSellerAv"></div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--txt-1);" id="detailSellerName"></div>
+            <div class="txt-muted" id="detailPosted"></div>
+          </div>
+        </div>
+        <p class="txt-body" id="detailDesc"></p>
+        <div id="detailActions"><!-- injected by JS --></div>
+        <!-- Offer inline form -->
+        <div class="offer-form" id="offerForm">
+          <div class="input-group">
+            <label class="input-label">Your Offer (₹)</label>
+            <div class="price-input-wrap">
+              <span class="price-prefix">₹</span>
+              <input class="input" id="offerPrice" type="number" placeholder="0"/>
+            </div>
+          </div>
+          <div class="input-group">
+            <label class="input-label">Message (optional)</label>
+            <textarea class="input" id="offerMsg" rows="2" placeholder="Why should they pick your offer?"></textarea>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-primary" style="flex:1;" onclick="submitOffer()">Submit Offer</button>
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('offerForm').classList.remove('open')">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+<script src="js/app.js"></script>
+<!-- guard.js checks login, market.js loads real Firestore data -->
+<script type="module" src="js/guard.js"></script>
+<script type="module" src="js/market.js"></script>
+<script>
+// ── Sample data (kept as fallback during development) ──
+/*const ITEMS = [
+  { id:1, title:'Engineering Mathematics Vol.1', price:350, category:'Books', sellingType:'offers', seller:'Rahul S.', posted:'2h ago', desc:'Good condition, minor highlights. Kreyszig 10th Ed. Very useful for 1st year students.', img:'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?w=500&q=70', badge:'Books' },
+  { id:2, title:'Dell Laptop Charger 65W', price:400, category:'Electronics', sellingType:'fixed', seller:'Priya K.', posted:'5h ago', desc:'Works perfectly. Original Dell charger. Selling because I upgraded my laptop.', img:'https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=500&q=70', badge:'Electronics' },
+  { id:3, title:'Hero Sprint 26T Cycle', price:4200, category:'Cycles', sellingType:'offers', seller:'Arjun M.', posted:'1d ago', desc:'Slightly used, good condition. Tires recently changed. Ideal for campus commute.', img:'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=500&q=70', badge:'Cycles' },
+  { id:4, title:'Wooden Study Chair', price:800, category:'Hostel', sellingType:'fixed', seller:'Simran T.', posted:'1d ago', desc:'Solid wood, no damage. Moving out of hostel so selling everything.', img:'https://images.unsplash.com/photo-1506439773649-6e0eb8cfb237?w=500&q=70', badge:'Hostel' },
+  { id:5, title:'Sony WH-1000XM4 Headphones', price:12500, category:'Electronics', sellingType:'offers', seller:'Deepika R.', posted:'2d ago', desc:'Excellent noise cancellation. Bought 6 months ago. Barely used, like new condition.', img:'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&q=70', badge:'Electronics' },
+  { id:6, title:'Nike Sports Shoes Size 9', price:700, category:'Clothing', sellingType:'fixed', seller:'Karan B.', posted:'2d ago', desc:'Worn twice only. Great condition. Perfect for sports and casual wear.', img:'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=500&q=70', badge:'Clothing' },
+  { id:7, title:'Casio Scientific Calculator', price:550, category:'Electronics', sellingType:'fixed', seller:'Amit V.', posted:'3d ago', desc:'FX-991ES Plus. Works perfectly. All functions working. Good for engineering students.', img:'https://images.unsplash.com/photo-1611532736597-de2d4265fba3?w=500&q=70', badge:'Electronics' },
+  { id:8, title:'Badminton Racket Set', price:350, category:'Sports', sellingType:'offers', seller:'Pooja N.', posted:'3d ago', desc:'2 rackets + shuttlecocks. Yonex brand. Good for casual play.', img:'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=500&q=70', badge:'Sports' },
+];*/
+
+let activeCategory = 'All';
+let currentItem = null;
+
+function renderCards(items) {
+  const grid = document.getElementById('cardGrid');
+  document.getElementById('itemCount').textContent = `${items.length} listing${items.length!==1?'s':''} found`;
+  if (!items.length) {
+    grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--txt-3);"><span class="material-symbols-outlined" style="font-size:48px;display:block;margin-bottom:12px;">search_off</span>No listings found</div>`;
+    return;
+  }
+  grid.innerHTML = items.map(item => `
+    <article class="card item-card" onclick="openDetail(${item.id})">
+      <div class="item-card-img">
+        <img src="${item.img}" alt="${item.title}" loading="lazy"/>
+        <span class="badge-img badge-img-left">${item.badge}</span>
+        <span class="badge-img badge-img-right">${item.sellingType==='offers'?'Open to Offers':'Fixed Price'}</span>
+      </div>
+      <div class="item-card-body">
+        <div class="item-card-title">${item.title}</div>
+        <div class="item-card-desc">${item.desc}</div>
+        <div class="txt-price" style="margin-bottom:10px;">₹${item.price.toLocaleString('en-IN')}</div>
+        <div class="item-card-footer">
+          <div class="item-card-seller">
+            <span class="material-symbols-outlined" style="font-size:14px;">person</span>
+            <span>${item.seller} · ${item.posted}</span>
+          </div>
+          <button class="btn btn-outline btn-sm">View Details</button>
+        </div>
+      </div>
+    </article>
+  `).join('');
+}
+
+function setChip(el, cat) {
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  activeCategory = cat;
+  filterCards();
+}
+
+function filterCards() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const filtered = ITEMS.filter(i =>
+    (activeCategory==='All' || i.category===activeCategory) &&
+    (i.title.toLowerCase().includes(q) || i.desc.toLowerCase().includes(q))
+  );
+  renderCards(filtered);
+}
+
+function openDetail(id) {
+  currentItem = ITEMS.find(i => i.id===id);
+  if (!currentItem) return;
+  document.getElementById('detailImg').src       = currentItem.img;
+  document.getElementById('detailTitle').textContent = currentItem.title;
+  document.getElementById('detailPrice').textContent = `₹${currentItem.price.toLocaleString('en-IN')}`;
+  document.getElementById('detailCat').textContent   = currentItem.badge;
+  document.getElementById('detailDesc').textContent  = currentItem.desc;
+  document.getElementById('detailSellerName').textContent = currentItem.seller;
+  document.getElementById('detailPosted').textContent    = currentItem.posted;
+  document.getElementById('detailSellerAv').textContent  = currentItem.seller.charAt(0);
+  document.getElementById('offerForm').classList.remove('open');
+  const actionsEl = document.getElementById('detailActions');
+  if (currentItem.sellingType==='fixed') {
+    actionsEl.innerHTML = `<button class="btn btn-primary btn-full" onclick="showToast('Seller email: ${currentItem.seller.toLowerCase().replace(' ','.')}@sliet.ac.in','info')"><span class="material-symbols-outlined">mail</span>Contact Seller</button>`;
+  } else {
+    actionsEl.innerHTML = `<button class="btn btn-primary btn-full" onclick="document.getElementById('offerForm').classList.add('open')"><span class="material-symbols-outlined">local_offer</span>Make an Offer</button>`;
+  }
+  openModal('detailModal');
+}
+
+function submitOffer() {
+  const price = document.getElementById('offerPrice').value;
+  if (!price) { showToast('Please enter your offer price','error'); return; }
+  showToast(`Offer of ₹${parseInt(price).toLocaleString('en-IN')} submitted!`,'success');
+  closeModal('detailModal');
+}
+
+// Init
+renderCards(ITEMS);
+</script>
+</body>
+</html>
