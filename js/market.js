@@ -47,7 +47,8 @@ async function silentManualCleanup() {
 
   const expiredSnap = await getDocs(expiredListingsQuery);
   const batch = writeBatch(db);
-
+ 
+  
   for (const doc of expiredSnap.docs) {
     batch.delete(doc.ref);
 

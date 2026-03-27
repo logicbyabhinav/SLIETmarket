@@ -25,6 +25,8 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 
+
+
 // ── SESSION CHECK ───────────────────────────────────────────────
 // When index.html loads, check if the user is ALREADY logged in.
 // If they are — skip the login page and go straight to marketplace.
