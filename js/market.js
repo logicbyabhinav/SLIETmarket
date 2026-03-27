@@ -179,7 +179,7 @@ function renderCards(items) {
         <div class="item-card-footer">
           <div class="item-card-seller">
             <span class="material-symbols-outlined" style="font-size:14px;">person</span>
-            <span>${item.sellerName} · ${formatTime(item.createdAt)}</span>
+            <span>${item.sellerName} <br> ${formatTime(item.createdAt)}</span>
           </div>
           <button class="btn btn-outline btn-sm">View Details</button>
         </div>
