@@ -1,55 +1,63 @@
-#  SLIET Market
+# SLIET Market
 
-> A peer-to-peer student marketplace exclusively for SLIET campus — buy, sell, and bid on items with your college email.
+> A campus-exclusive, peer-to-peer student marketplace built for **Sant Longowal Institute of Engineering and Technology** — buy, sell, and bid on items using your verified college email.
 
 ![Firebase](https://img.shields.io/badge/Firebase-10.12.0-orange?logo=firebase)
 ![Firestore](https://img.shields.io/badge/Firestore-Realtime-blue?logo=google)
 ![Vanilla JS](https://img.shields.io/badge/JavaScript-ES%20Modules-yellow?logo=javascript)
 ![Auth](https://img.shields.io/badge/Auth-@sliet.ac.in%20only-green)
+![ImgBB](https://img.shields.io/badge/Images-ImgBB%20CDN-blueviolet)
+![Cost](https://img.shields.io/badge/Infrastructure-100%25%20Free-brightgreen)
 
 ---
 
-##  What is SLIET Market?
+## What is SLIET Market?
 
-SLIET Market is a campus-exclusive, serverless web application that allows students of **Sant Longowal Institute of Engineering and Technology** to list items for sale and place offers on each other's listings — all within a secure, verified student community.
+SLIET Market is a **serverless, zero-infrastructure-cost** web application that lets verified SLIET students list items for sale and negotiate deals — all within a trusted, closed campus community.
 
-Only `@sliet.ac.in` email addresses can register. No outsiders. No spam.
+Registration is gated exclusively to `@sliet.ac.in` email addresses. No outsiders. No spam. No hosting fees.
 
----
-
-##  Features
-
--  **Gated Authentication** — Sign up and sign in restricted to `@sliet.ac.in` emails only
--  **Email Verification** — Firebase sends a verification link before any access is granted
--  **Real-time Marketplace** — Listings update live using Firestore `onSnapshot` — no refresh needed
--  **Two Selling Modes** — Sellers choose between **Fixed Price** (contact only) or **Open to Offers** (bidding)
--  **Offer / Bidding System** — Buyers submit offers with a price and optional message
--  **Atomic Deal Closure** — Accepting an offer marks the item as sold and auto-rejects all other bids in one batch write
--  **Privacy-first Contact Reveal** — Seller's phone number is only visible to the accepted buyer, never stored in offer documents
--  **Image Upload** — Up to 3 product photos uploaded to Firebase Storage per listing
--  **Responsive UI** — Works on mobile and desktop with a hamburger nav
+**Live project:** [sliet-market-v2.web.app](https://sliet-market-v2.web.app) *(or your deployment URL)*
 
 ---
 
-##  Project Structure
+## Features
+
+| Feature | Details |
+|---|---|
+| **Domain-Gated Auth** | Only `@sliet.ac.in` emails can register — enforced in JS and Firebase Rules |
+| **Email Verification** | Firebase sends a verification link; sign-in is blocked until confirmed |
+| **Real-time Marketplace** | Listings update live via Firestore `onSnapshot` — no page refresh needed |
+| **Two Selling Modes** | **Fixed Price** (request-to-buy) or **Open to Offers** (live bidding) |
+| **Atomic Deal Closure** | Accepting an offer marks the item sold and auto-rejects all other bids in a single `writeBatch` — no partial state possible |
+| **Privacy-first Contact Reveal** | Seller phone is stored only in their user profile; it is never written to an offer document and only becomes accessible to the accepted buyer |
+| **Image Hosting via ImgBB** | Product photos are uploaded to ImgBB CDN (free tier); the returned HTTPS URLs are saved to Firestore — no Firebase Storage billing required |
+| **Auto-expiry Policy** | Images auto-delete from ImgBB after 90 days; listings store an `expireAt` field for server-side cleanup |
+| **Relist Support** | Sellers can reopen a sold listing, which atomically resets status and invalidates all prior bids |
+| **Responsive UI** | Hamburger nav, modal system, and toast notifications — works on mobile and desktop |
+| **Admin Bypass Rules** | Core team accounts bypass Firestore Security Rules for moderation and maintenance |
+
+---
+
+## Project Structure
 
 ```
-/slietmarket
+sliet-market/
 │
-├── /css
-│   ├── style.css          ← Global UI: variables, cards, modals, badges, toasts
-│   └── auth.css           ← Login/Signup page specific styles
+├── css/
+│   ├── style.css          ← Global UI: CSS variables, cards, modals, badges, toasts
+│   └── auth.css           ← Login / Sign-up page styles
 │
-├── /js
+├── js/
 │   ├── firebase.js        ← Firebase SDK init; exports auth, db, storage
-│   ├── app.js             ← Shared helpers: toast, modal open/close, hamburger menu
+│   ├── app.js             ← Shared helpers: toast notifications, modal open/close, hamburger
 │   ├── auth.js            ← Sign up, sign in, email verification, session check
 │   ├── guard.js           ← Auth guard for protected pages; sets window.currentUser
 │   ├── market.js          ← Marketplace feed: real-time listings, search, filter, offer submission
-│   ├── listings.js        ← Seller dashboard: publish listing, image upload, accept/reject offers
+│   ├── listings.js        ← Seller dashboard: publish listing, ImgBB upload, accept/reject offers, relist
 │   └── bids.js            ← Buyer dashboard: track sent offers, withdraw, reveal seller contact
 │
-├── index.html             ← Login & Sign Up page
+├── index.html             ← Login & Sign-up page
 ├── welcome.html           ← Post-registration welcome screen
 ├── marketplace.html       ← Browse all active listings
 ├── listings.html          ← Seller's dashboard
@@ -58,195 +66,252 @@ Only `@sliet.ac.in` email addresses can register. No outsiders. No spam.
 
 ---
 
-##  How It Works
+## Architecture & How It Works
 
 ### 1. Authentication Flow
 
 ```
-Sign Up → Email Verification Link → Verified → Marketplace
-Sign In → Check emailVerified → Redirect to Marketplace
+Sign Up ──► Email Verification Link ──► Verified ──► Marketplace
+Sign In ──► Check emailVerified      ──► Redirect  ──► Marketplace
+              │
+              └─► Not verified? ──► Sign out + resend link
 ```
 
-- `auth.js` handles registration using `createUserWithEmailAndPassword`
-- On signup, a user profile document is saved to Firestore (`/users/{uid}`) with name, email, and phone
-- `sendEmailVerification()` sends a link to the student's `@sliet.ac.in` inbox
-- Sign in is **blocked** until the email is verified — `emailVerified` is checked on every login
-- `guard.js` runs on all inner pages (`marketplace`, `listings`, `bids`) and redirects unverified or logged-out users back to `index.html`
+- `auth.js` registers users with `createUserWithEmailAndPassword`
+- On sign-up, a user profile document is written to Firestore at `/users/{uid}` with name, email, and phone
+- `sendEmailVerification()` dispatches a link to the student's `@sliet.ac.in` inbox
+- Sign-in is **hard-blocked** until `user.emailVerified === true`
+- `guard.js` runs on every inner page and immediately redirects unverified or logged-out users to `index.html`
+- `window.currentUser` and `window.currentProfile` are set globally by `guard.js` so all modules share session context without re-importing
 
 ---
 
 ### 2. Listing a Product (`listings.js`)
 
 ```
-Fill Form → Select Images → Click Publish
-         ↓
-   Upload images to Firebase Storage (parallel)
-         ↓
-   Save listing document to Firestore /listings
-         ↓
-   Appears live on Marketplace instantly
+Fill Form ──► Select Images (max 3)
+                    │
+                    ▼
+         Upload to ImgBB CDN via fetch()
+         ← Returns HTTPS image URLs
+                    │
+                    ▼
+         Save listing doc to Firestore /listings
+         (images field = ImgBB URL array)
+                    │
+                    ▼
+         Appears live on Marketplace instantly
 ```
 
-- Seller fills in title, category, condition, description, and price
-- Chooses selling type: **Fixed Price** or **Open to Offers**
-- Up to 3 images are uploaded to Firebase Storage under `listings/{userId}/`
-- Listing document saved to `/listings` with status `active`
-- The seller's own listings page uses `onSnapshot` for real-time updates
+**Why ImgBB instead of Firebase Storage?**
+Firebase Storage requires the **Blaze (pay-as-you-go) billing plan**. To keep SLIET Market entirely free and consistent for all contributors, images are uploaded to the [ImgBB API](https://api.imgbb.com) (free tier). The returned CDN links are stored in Firestore. Images are configured to auto-delete after `7,776,000 seconds` (90 days), matching the listing expiry policy.
+
+Each listing document also stores an `expireAt` timestamp (3 months ahead) for automated server-side cleanup scripts.
 
 ---
 
 ### 3. Browsing & Searching (`market.js`)
 
 - Marketplace loads all `status == 'active'` listings ordered by `createdAt DESC` using `onSnapshot`
-- Search bar filters by title and description in real time (client-side)
+- Search bar filters by title and description in real-time (client-side, no extra reads)
 - Category chips filter by item type
-- Clicking a card opens a detail modal with full info and action buttons
+- Clicking a listing card opens a detail modal with full info
 - If the item belongs to the logged-in user → shows "This is your listing" (no self-purchase)
-- **Fixed Price** items → show seller's email on click
-- **Open to Offers** items → show an inline offer form
+- **Fixed Price** items → show a one-click "Request to Buy" button
+- **Open to Offers** items → show an inline offer form with price and optional message fields
 
 ---
 
 ### 4. Placing an Offer (`market.js → submitOffer`)
 
 ```
-Buyer opens item → Clicks "Make an Offer" → Enters price + message
-         ↓
-   Anti-spam check: already have a pending/accepted offer for this item?
-         ↓ (if not)
-   Create document in /offers with status: 'pending'
+Buyer opens item ──► Clicks "Make an Offer" ──► Enters price + message
+                              │
+               Anti-spam check via Firestore query:
+               Does buyer already have a pending/accepted offer?
+                              │
+               No duplicate ──► Create offer doc in /offers
+                                 status: 'pending'
 ```
 
-- Before submitting, `submitOffer()` queries Firestore to check if the buyer already has a `pending` or `accepted` offer on the same listing — preventing duplicate bids
-- Offer document stores: `listingId`, `listingTitle`, `sellerId`, `sellerName`, `buyerId`, `buyerName`, `buyerEmail`, `offerPrice`, `message`, `status`, `createdAt`
-- **Note:** Seller's phone number is intentionally NOT stored here for privacy
+Before creating an offer, `submitOffer()` queries Firestore to confirm the buyer has no existing `pending` or `accepted` offer for the same listing. This prevents bid spam at the application layer (Firestore Rules enforce it at the data layer).
+
+The offer document stores buyer-side data only. **The seller's phone number is intentionally never stored in an offer document.**
 
 ---
 
-### 5. Accepting an Offer (`listings.js → acceptOffer`)
+### 5. Fixed Price "Request to Buy" Flow
 
-This is the most critical operation — handled as an **atomic batch write**:
+Fixed-price items also use the offer system to protect seller privacy until a deal is confirmed:
 
 ```
-Seller clicks Accept on an offer
-         ↓
-   writeBatch:
-   ├── listings/{id}  →  status: 'sold', buyerId: winner, soldAt: now
-   └── offers/{id}    →  status: 'accepted'
-         ↓
-   Second batch: all remaining pending offers → status: 'rejected'
-         ↓
-   Buyer's bids page auto-updates via onSnapshot
+Buyer clicks "Request to Buy"
+        │
+        ▼
+System auto-creates an offer at full asking price
+(seller email + phone remain hidden)
+        │
+        ▼
+Seller accepts ──► Contact revealed to buyer via "Your Bids" tab
 ```
 
-- Uses `writeBatch()` so the listing and accepted offer are updated atomically — no partial state
-- A second batch then rejects all other pending offers for that listing
-- Once sold, the listing disappears from the marketplace automatically
+This ensures no seller contact information is ever exposed without explicit seller approval, regardless of listing type.
 
 ---
 
-### 6. Viewing & Managing Bids (`bids.js`)
+### 6. Accepting an Offer — Atomic Batch Write (`listings.js → acceptOffer`)
 
-- Buyer's bids page listens in real time using `onSnapshot` — status changes appear instantly
-- **Pending** bids show a **Withdraw** button
-- **Accepted** bids show a **View Contact** button
-- **Rejected** bids show a **Remove** button (deletes the document)
+This is the most critical operation in the app. It is handled entirely as an **atomic `writeBatch`** to prevent any partial state:
 
-**Seller Contact Reveal (Privacy Flow):**
+```
+Seller clicks Accept
+        │
+        ▼
+writeBatch (Phase 1):
+├── listings/{id}  →  status: 'sold', buyerId: winner, soldAt: serverTimestamp()
+└── offers/{id}    →  status: 'accepted'
+        │
+        ▼
+writeBatch (Phase 2):
+└── All other pending offers for this listing → status: 'rejected'
+        │
+        ▼
+batch.commit() ← All writes succeed or all fail. No half-states.
+        │
+        ▼
+Sold listing auto-disappears from Marketplace (onSnapshot filter)
+Rejected buyers' dashboards update in real-time
+```
+
+Using `writeBatch()` guarantees that a listing is never marked `sold` without its accepted offer being updated simultaneously, and competing buyers are always notified.
+
+---
+
+### 7. Managing Bids (`bids.js`)
+
+- Buyer's bids page uses `onSnapshot` — status changes from the seller propagate instantly
+- **Pending** → shows a **Withdraw** button (sets status to `rejected`)
+- **Accepted** → shows a **View Contact** button (triggers the privacy reveal flow)
+- **Rejected** → shows a **Remove** button (permanently deletes the offer document)
+
+**Seller Contact Reveal — Privacy Flow:**
 
 ```
 Buyer clicks "View Contact"
-         ↓
-   Fetch offer document → verify status == 'accepted'
-         ↓
-   Fetch seller's /users/{uid} document
-         ↓
-   Display name + email + phone in modal
+        │
+        ▼
+Fetch offer document → verify status === 'accepted'
+        │
+        ▼
+Fetch /users/{sellerId} document
+        │
+        ▼
+Display: name + email + phone in modal
 ```
 
-The seller's phone number lives **only** in their `/users` profile document. It is never stored in the offer. Only a buyer with an `accepted` offer can trigger this fetch — enforced both in JS logic and Firestore Security Rules.
+The seller's phone number lives **only** in their `/users` profile document. It is never stored in the offer. Only a buyer whose offer status is `accepted` can trigger this fetch — enforced both in the application logic and in Firestore Security Rules.
 
 ---
 
-##  Firestore Data Structure
+## Firestore Data Structure
 
 ### `/users/{uid}`
-| Field | Type | Description |
+
+| Field | Type | Notes |
 |---|---|---|
 | `uid` | string | Firebase Auth UID |
-| `firstName` | string | First name |
-| `lastName` | string | Last name |
-| `name` | string | Full name (firstName + lastName) |
-| `email` | string | College email |
-| `phone` | string | Phone number (private) |
+| `firstName` | string | |
+| `lastName` | string | |
+| `name` | string | `firstName + ' ' + lastName` |
+| `email` | string | `@sliet.ac.in` only |
+| `phone` | string | Private — never stored in offers |
 | `joinedAt` | string | ISO timestamp |
 
 ### `/listings/{listingId}`
-| Field | Type | Description |
+
+| Field | Type | Notes |
 |---|---|---|
-| `title` | string | Item title |
-| `category` | string | Item category |
+| `title` | string | |
+| `category` | string | |
 | `condition` | string | New / Good / Fair / Poor |
-| `description` | string | Item description |
+| `description` | string | |
 | `price` | number | Asking price (₹) |
 | `sellingType` | string | `'fixed'` or `'offers'` |
-| `images` | array | Firebase Storage URLs (max 3) |
+| `images` | array | ImgBB CDN HTTPS URLs (max 3) |
 | `sellerId` | string | Seller's UID |
-| `sellerName` | string | Seller's display name |
-| `sellerEmail` | string | Seller's email |
+| `sellerName` | string | |
+| `sellerEmail` | string | |
 | `status` | string | `'active'` or `'sold'` |
 | `buyerId` | string / null | UID of accepted buyer |
-| `soldAt` | timestamp / null | When the deal was closed |
-| `createdAt` | timestamp | Server timestamp |
+| `soldAt` | timestamp / null | |
+| `createdAt` | timestamp | `serverTimestamp()` |
+| `expireAt` | date | 3 months from creation; used for cleanup |
 
 ### `/offers/{offerId}`
-| Field | Type | Description |
+
+| Field | Type | Notes |
 |---|---|---|
-| `listingId` | string | Reference to the listing |
-| `listingTitle` | string | Denormalized title for display |
-| `listingImage` | string | Denormalized image URL for bids page |
-| `listingPrice` | number | Denormalized asking price for bids page |
-| `sellerId` | string | Seller's UID |
-| `sellerName` | string | Seller's display name |
-| `buyerId` | string | Buyer's UID |
-| `buyerName` | string | Buyer's display name |
-| `buyerEmail` | string | Buyer's email |
-| `offerPrice` | number | Buyer's offered price (₹) |
-| `message` | string | Optional message from buyer |
+| `listingId` | string | |
+| `listingTitle` | string | Denormalised for display |
+| `listingImage` | string | Denormalised for bids page |
+| `listingPrice` | number | Denormalised asking price |
+| `sellerId` | string | |
+| `sellerName` | string | |
+| `buyerId` | string | |
+| `buyerName` | string | |
+| `buyerEmail` | string | |
+| `offerPrice` | number | Buyer's offer (₹) |
+| `message` | string | Optional note from buyer |
 | `status` | string | `'pending'` / `'accepted'` / `'rejected'` |
-| `createdAt` | timestamp | Server timestamp |
+| `createdAt` | timestamp | `serverTimestamp()` |
 
 ---
 
-##  Firestore Security Rules
+## Firestore Security Rules
 
-```js
+```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // User profiles: only the owner can read/write their own data
+    // 1. ADMIN BYPASS — Core team accounts have full access
+    match /{document=**} {
+      allow read, write: if request.auth != null && (
+        request.auth.token.email == "abhinav_2411002@sliet.ac.in" ||
+        request.auth.token.email == "abhimanyu_2411004@sliet.ac.in" ||
+        request.auth.token.email == "aryan_2411001@sliet.ac.in"
+      );
+    }
+
+    // 2. USER PROFILES
     match /users/{userId} {
-      allow read, write: if request.auth.uid == userId;
+      allow write: if request.auth.uid == userId;
+      // Any verified SLIET student can read profiles
+      // Required for the "View Contact" flow on accepted offers
+      allow read: if request.auth != null;
     }
 
-    // Listings: any verified user can read/create;
-    // only the seller can update or delete their own listing
+    // 3. LISTINGS
     match /listings/{listingId} {
-      allow read:          if request.auth != null;
-      allow create:        if request.auth != null;
-      allow update, delete: if request.auth.uid == resource.data.sellerId;
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow update, delete: if request.auth != null
+        && request.auth.uid == resource.data.sellerId;
     }
 
-    // Offers: only the buyer and seller involved can read;
-    // any verified user can create; only the seller can update status
+    // 4. OFFERS
     match /offers/{offerId} {
-      allow read:   if request.auth != null &&
-                    (request.auth.uid == resource.data.buyerId ||
-                     request.auth.uid == resource.data.sellerId);
       allow create: if request.auth != null;
-      allow update: if request.auth != null &&
-                    request.auth.uid == resource.data.sellerId;
+      allow read: if request.auth != null && (
+        request.auth.uid == resource.data.buyerId ||
+        request.auth.uid == resource.data.sellerId
+      );
+      allow update: if request.auth != null && (
+        request.auth.uid == resource.data.sellerId ||
+        request.auth.uid == resource.data.buyerId
+      );
+      allow delete: if request.auth != null
+        && request.auth.uid == resource.data.buyerId;
     }
   }
 }
@@ -254,9 +319,9 @@ service cloud.firestore {
 
 ---
 
-##  Required Firestore Indexes
+## Required Firestore Indexes
 
-These composite indexes must be created in the Firebase Console under **Firestore → Indexes**:
+Create these composite indexes in **Firebase Console → Firestore → Indexes**:
 
 | Collection | Fields | Order |
 |---|---|---|
@@ -266,65 +331,89 @@ These composite indexes must be created in the Firebase Console under **Firestor
 | `offers` | `listingId`, `status`, `offerPrice` | ASC, ASC, DESC |
 | `offers` | `listingId`, `buyerId`, `status` | ASC, ASC, ASC |
 
-> Without these, Firestore will throw an error and provide a direct link to create the missing index automatically.
+> Firestore will throw a descriptive error with a direct console link to auto-create any missing index.
 
 ---
 
-##  Running Locally
+## Running Locally
 
-**1. Clone the repository**
+### 1. Clone the repository
+
 ```bash
 git clone https://github.com/logicbyabhinav/sliet-market.git
 cd sliet-market
 ```
 
-**2. Start a local HTTP server** (required — `file://` protocol breaks Firebase Auth)
+### 2. Start a local HTTP server
 
-Using Node.js:
+`file://` protocol breaks Firebase Auth — a local server is required.
+
 ```bash
+# Node.js
 npx serve .
-```
-Then open `http://localhost:3000` in your browser.
+# Then open: http://localhost:3000
 
-Or using Python:
-```bash
+# Python
 python -m http.server 8000
+# Then open: http://localhost:8000
 ```
-Then open `http://localhost:8000`.
 
-**3. Firebase Setup**
+### 3. Firebase Setup
 
-- Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
-- Enable **Authentication → Email/Password**
-- Enable **Firestore Database**
-- Enable **Storage**
-- Copy your config into `js/firebase.js`
-- Add `localhost` and `127.0.0.1` to **Authentication → Settings → Authorized Domains**
-- Apply the Security Rules from above
-- Create the Firestore Indexes from the table above
+1. Create a project at [console.firebase.google.com](https://console.firebase.google.com)
+2. Enable **Authentication → Email/Password**
+3. Enable **Firestore Database**
+4. Add `localhost` and `127.0.0.1` to **Authentication → Settings → Authorized Domains**
+5. Copy your project config into `js/firebase.js`
+6. Apply the Security Rules from above
+7. Create the Firestore Indexes from the table above
+
+> **Note:** Firebase Storage is **not required**. Images are hosted via ImgBB.
+
+### 4. ImgBB Setup
+
+1. Create a free account at [api.imgbb.com](https://api.imgbb.com)
+2. Generate a free API key
+3. Replace the `IMGBB_API_KEY` constant in `js/listings.js`
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Frontend | Vanilla HTML, CSS, JavaScript (ES Modules) |
-| Authentication | Firebase Auth (Email/Password) |
-| Database | Cloud Firestore (NoSQL, real-time) |
-| File Storage | Firebase Storage |
-| Hosting | Any static host (Firebase Hosting, Vercel, Netlify) |
+| Frontend | Vanilla HTML, CSS, JavaScript (ES Modules — no framework, no bundler) |
+| Authentication | Firebase Auth (Email/Password + Email Verification) |
+| Database | Cloud Firestore (NoSQL, real-time `onSnapshot`) |
+| Image Hosting | ImgBB CDN API (free tier — no Firebase Storage billing) |
+| Hosting | Firebase Hosting / Vercel / Netlify (static) |
 | Build Tool | None — CDN imports only |
 
 ---
 
-##  Author
+## Key Engineering Decisions
+
+**Why no npm / build tooling?**
+The project targets contributors and campus peers who may not have Node.js configured. Zero-install setup via CDN imports means anyone can clone and run.
+
+**Why ImgBB instead of Firebase Storage?**
+Firebase Storage requires activating the Blaze billing plan. ImgBB's free API tier keeps the entire stack cost-free and deployable by any student without a credit card.
+
+**Why `writeBatch` for offer acceptance?**
+Accepting an offer modifies a listing and multiple offer documents simultaneously. A batch write makes the operation atomic — the listing can never appear as `sold` while offers remain `pending`, regardless of network conditions or concurrent requests.
+
+**Why phone numbers are not stored in offers?**
+Seller contact details are sensitive. Storing a phone number in an offer document would make it readable by anyone with a reference to that offer. By keeping it exclusively in the seller's `/users` profile and only fetching it post-acceptance, the app enforces privacy at both the application and database rules layer.
+
+---
+
+## Author
 
 **Abhinav Kishore**
 GitHub: [@logicbyabhinav](https://github.com/logicbyabhinav)
 
 ---
 
-##  License
+## License
 
-This project is for educational and campus use. Not licensed for commercial redistribution.
+This project is built for educational and campus use at SLIET. Not licensed for commercial redistribution.
