@@ -48,7 +48,7 @@ async function silentManualCleanup() {
   const expiredSnap = await getDocs(expiredListingsQuery);
   const batch = writeBatch(db);
  
-  
+
   for (const doc of expiredSnap.docs) {
     batch.delete(doc.ref);
 
@@ -303,6 +303,7 @@ window.submitOffer = async function () {
     await addDoc(collection(db, "offers"), {
       listingId: currentItem.id,
       listingTitle: currentItem.title,
+      listingImage: currentItem.images?.[0] || '',
       sellerId: currentItem.sellerId,
       sellerName: currentItem.sellerName,
       buyerId: window.currentUser.uid,
