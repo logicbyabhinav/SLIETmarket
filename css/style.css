@@ -214,8 +214,15 @@ textarea.input { resize:vertical; min-height:100px; }
 }
 .item-card-desc {
   font-size:13px; color:var(--txt-2);
-  display:-webkit-box; -webkit-line-clamp:2;
-  -webkit-box-orient:vertical; overflow:hidden; margin-bottom:10px;
+  display:-webkit-box; -webkit-line-  .item-card-desc {
+    font-size:13px; color:var(--txt-2);
+    display:-webkit-box;
+    -webkit-line-clamp:2;
+    line-clamp:2; /* standard property for compatibility */
+    -webkit-box-orient:vertical;
+    overflow:hidden;
+    margin-bottom:10px;
+  };
 }
 .item-card-footer {
   display:flex; align-items:center; justify-content:space-between;
