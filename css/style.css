@@ -194,11 +194,14 @@ textarea.input { resize:vertical; min-height:100px; }
   background:var(--bg-card); border:1px solid var(--border);
   border-radius:var(--r-lg); overflow:hidden;
   transition:box-shadow .25s, transform .25s, border-color .25s;
+   display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 .card:hover { transform:translateY(-3px); box-shadow:0 8px 28px var(--shadow); border-color:rgba(79,142,247,.25); }
 
 /* Auto-responsive grids */
-.card-grid    { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:clamp(12px,2vw,20px); }
+.card-grid    { display:grid; grid-template-columns:repeat(auto-fill,minmax(260px,1fr)); gap:clamp(12px,2vw,20px); align-items: stretch;  }
 .card-grid-sm { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:clamp(10px,1.5vw,16px); }
 
 /* Item card */
