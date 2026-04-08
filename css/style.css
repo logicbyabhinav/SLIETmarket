@@ -238,13 +238,11 @@ textarea.input { resize:vertical; min-height:100px; }
 /* ── IMAGE GALLERY (Detail Modal) ─────────────────────── */
 .img-gallery { position: relative; width: 100%; height: 100%; overflow: hidden; }
 .img-track {
- .img-track {
   display: flex;
+  width: 100%;          /* ← ADD */
   height: 100%;
-  width: 100%;          /* ← yeh add kar */
   transition: transform 0.35s ease;
-  will-change: transform; /* ← smooth karta hai mobile pe */
-}
+  overflow: hidden;     /* ← ADD */
 }
 .img-track img {
   min-width: 100%;

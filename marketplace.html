@@ -53,12 +53,19 @@
         }
         .detail-img-col {
           aspect-ratio: 16/9;
+          min-height: unset; /* ← min-height override */
+          width: 100%;
+          overflow: hidden; /* ← contain karo */
         }
         .detail-modal {
           max-width: 100%;
           margin: 0;
+          border-radius: var(--r-lg);
         }
-        .img-gallery,
+        .img-gallery {
+          width: 100%;
+          overflow: hidden;
+        }
         .img-track {
           width: 100%;
           overflow: hidden;
@@ -66,7 +73,11 @@
         .img-track img {
           min-width: 100%;
           max-width: 100%;
+          flex-shrink: 0;
         }
+      }
+      .detail-modal {
+        overflow: hidden; /* ← marketplace.html internal style mein add kar */
       }
       .detail-price {
         font-family: "Syne", sans-serif;
