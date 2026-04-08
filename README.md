@@ -36,6 +36,8 @@ Registration is gated exclusively to `@sliet.ac.in` email addresses. No outsider
 | **Relist Support** | Sellers can reopen a sold listing, which atomically resets status and invalidates all prior bids |
 | **Responsive UI** | Hamburger nav, modal system, and toast notifications — works on mobile and desktop |
 | **Admin Bypass Rules** | Core team accounts bypass Firestore Security Rules for moderation and maintenance |
+| **Edit Listings** | Sellers can edit any active listing directly from their dashboard — title, price, images, condition — without deleting and relisting |
+| **Multi-Image Gallery** | Detail modal supports up to 3 product images with left/right arrow navigation; cards still show only the primary image |
 
 ---
 
@@ -46,8 +48,7 @@ sliet-market/
 │
 ├── css/
 │   ├── style.css          ← Global UI: CSS variables, cards, modals, badges, toasts
-│   └── auth.css           ← Login / Sign-up page styles
-│
+│   
 ├── js/
 │   ├── firebase.js        ← Firebase SDK init; exports auth, db, storage
 │   ├── app.js             ← Shared helpers: toast notifications, modal open/close, hamburger
@@ -109,6 +110,32 @@ Firebase Storage requires the **Blaze (pay-as-you-go) billing plan**. To keep SL
 Each listing document also stores an `expireAt` timestamp (3 months ahead) for automated server-side cleanup scripts.
 
 ---
+### 2b. Editing a Listing (`listings.js → prepEditListing / updateListing`)
+
+Sellers can edit any active listing without relisting:
+
+```
+Seller clicks Edit on a card
+        │
+        ▼
+prepEditListing() pre-fills the form with existing data
+Action button transforms: "Publish Listing" → "Save Changes"
+        │
+        ▼
+Seller makes changes ──► clicks "Save Changes"
+        │
+        ▼
+updateListing():
+├── If new images selected → re-upload to ImgBB
+└── If no new images → retain existing preview URLs
+        │
+        ▼
+updateDoc() patches the Firestore listing document
+updatedAt: serverTimestamp() tracked for audit
+        │
+        ▼
+resetForm() restores button back to "Publish Listing" mode
+```
 
 ### 3. Browsing & Searching (`market.js`)
 
@@ -121,6 +148,20 @@ Each listing document also stores an `expireAt` timestamp (3 months ahead) for a
 - **Open to Offers** items → show an inline offer form with price and optional message fields
 
 ---
+### 3b. Image Gallery in Detail Modal (`market.js → openDetail`)
+
+```
+Card clicked ──► openDetail()
+                    │
+                    ▼
+         images[] array rendered into .img-track
+         Left / Right arrow buttons injected
+                    │
+                    ▼
+         goSlide(dir) shifts translateX by 100% per slide
+         Arrows auto-hidden if only 1 image exists
+```
+
 
 ### 4. Placing an Offer (`market.js → submitOffer`)
 
