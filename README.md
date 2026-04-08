@@ -109,7 +109,6 @@ Firebase Storage requires the **Blaze (pay-as-you-go) billing plan**. To keep SL
 
 Each listing document also stores an `expireAt` timestamp (3 months ahead) for automated server-side cleanup scripts.
 
----
 ### 2b. Editing a Listing (`listings.js → prepEditListing / updateListing`)
 
 Sellers can edit any active listing without relisting:
@@ -136,7 +135,7 @@ updatedAt: serverTimestamp() tracked for audit
         ▼
 resetForm() restores button back to "Publish Listing" mode
 ```
-
+---
 ### 3. Browsing & Searching (`market.js`)
 
 - Marketplace loads all `status == 'active'` listings ordered by `createdAt DESC` using `onSnapshot`
@@ -147,7 +146,6 @@ resetForm() restores button back to "Publish Listing" mode
 - **Fixed Price** items → show a one-click "Request to Buy" button
 - **Open to Offers** items → show an inline offer form with price and optional message fields
 
----
 ### 3b. Image Gallery in Detail Modal (`market.js → openDetail`)
 
 ```
@@ -161,7 +159,7 @@ Card clicked ──► openDetail()
          goSlide(dir) shifts translateX by 100% per slide
          Arrows auto-hidden if only 1 image exists
 ```
-
+---
 
 ### 4. Placing an Offer (`market.js → submitOffer`)
 
