@@ -47,7 +47,6 @@ async function silentManualCleanup() {
 
   const expiredSnap = await getDocs(expiredListingsQuery);
   const batch = writeBatch(db);
- 
 
   for (const doc of expiredSnap.docs) {
     batch.delete(doc.ref);
@@ -64,7 +63,7 @@ async function silentManualCleanup() {
       batch.delete(offerDoc.ref);
     });
   }
-  
+
   await batch.commit();
   console.log("Database maintenance complete. Junk cleared.");
   showToast("Database maintenance complete. Junk cleared.", "success");
@@ -199,7 +198,24 @@ window.openDetail = function (itemId) {
   if (!currentItem) return;
 
   // Fill modal fields
-  document.getElementById("detailImg").src = currentItem.images?.[0] || "";
+  const images = currentItem.images?.length
+    ? currentItem.images
+    : ["https://via.placeholder.com/400x300?text=No+Image"];
+  let currentSlide = 0;
+
+  const track = document.getElementById("imgTrack");
+  track.innerHTML = images.map((url) => `<img src="${url}" alt=""/>`).join("");
+
+  window.goSlide = function (dir) {
+    currentSlide = (currentSlide + dir + images.length) % images.length;
+    track.style.transform = `translateX(-${currentSlide * 100}%)`;
+  };
+
+  // Hide arrows if only 1 image
+  const arrows = document.querySelectorAll(".img-arrow");
+  arrows.forEach(
+    (a) => (a.style.display = images.length > 1 ? "flex" : "none"),
+  );
   document.getElementById("detailTitle").textContent = currentItem.title;
   document.getElementById("detailPrice").textContent =
     `₹${Number(currentItem.price).toLocaleString("en-IN")}`;
@@ -229,12 +245,12 @@ window.openDetail = function (itemId) {
       <div style="text-align:center;padding:10px;background:var(--bg-input);border-radius:var(--r);">
         <p style="font-size:13px;color:var(--txt-3);">This is your listing</p>
       </div>`;
-  } else if (currentItem.sellingType === 'fixed') {
+  } else if (currentItem.sellingType === "fixed") {
     actionsEl.innerHTML = `
       <button class="btn btn-primary btn-full" id="buyRequestBtn"
         onclick="sendFixedRequest()">
         <span class="material-symbols-outlined">shopping_cart</span>
-        Request to Buy (₹${Number(currentItem.price).toLocaleString('en-IN')})
+        Request to Buy (₹${Number(currentItem.price).toLocaleString("en-IN")})
       </button>`;
   } else {
     // Open to offers: show "Make an Offer" button
@@ -302,7 +318,7 @@ window.submitOffer = async function () {
     await addDoc(collection(db, "offers"), {
       listingId: currentItem.id,
       listingTitle: currentItem.title,
-      listingImage: currentItem.images?.[0] || '',
+      listingImage: currentItem.images?.[0] || "",
       sellerId: currentItem.sellerId,
       sellerName: currentItem.sellerName,
       buyerId: window.currentUser.uid,
@@ -328,58 +344,57 @@ window.submitOffer = async function () {
   }
 };
 
-window.sendFixedRequest = async function() {
-    const btn = document.getElementById('buyRequestBtn');
-    
-    if (!window.currentUser) {
-        showToast('Please login to buy', 'error');
-        return;
+window.sendFixedRequest = async function () {
+  const btn = document.getElementById("buyRequestBtn");
+
+  if (!window.currentUser) {
+    showToast("Please login to buy", "error");
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = "Sending Request...";
+
+  try {
+    // 1. Anti-Spam Check (Same as your bid logic)
+    const qCheck = query(
+      collection(db, "offers"),
+      where("listingId", "==", currentItem.id),
+      where("buyerId", "==", window.currentUser.uid),
+      where("status", "in", ["pending", "accepted"]),
+    );
+    const existingSnap = await getDocs(qCheck);
+    if (!existingSnap.empty) {
+      showToast("Request already sent!", "error");
+      return;
     }
 
-    btn.disabled = true;
-    btn.textContent = 'Sending Request...';
+    // 2. Create the "Silent Bid" at full price
+    await addDoc(collection(db, "offers"), {
+      listingId: currentItem.id,
+      listingTitle: currentItem.title,
+      listingPrice: currentItem.price,
+      listingImage: currentItem.images?.[0] || "",
+      sellerId: currentItem.sellerId,
+      sellerName: currentItem.sellerName,
+      buyerId: window.currentUser.uid,
+      buyerName: window.currentProfile.name,
+      buyerEmail: window.currentUser.email,
+      offerPrice: Number(currentItem.price), // Full price
+      message: "I am interested in buying this at the listed price.",
+      status: "pending",
+      createdAt: serverTimestamp(),
+    });
 
-    try {
-        // 1. Anti-Spam Check (Same as your bid logic)
-        const qCheck = query(
-            collection(db, 'offers'),
-            where('listingId', '==', currentItem.id),
-            where('buyerId', '==', window.currentUser.uid),
-            where('status', 'in', ['pending', 'accepted'])
-        );
-        const existingSnap = await getDocs(qCheck);
-        if (!existingSnap.empty) {
-            showToast('Request already sent!', 'error');
-            return;
-        }
-
-        // 2. Create the "Silent Bid" at full price
-        await addDoc(collection(db, 'offers'), {
-            listingId:     currentItem.id,
-            listingTitle:  currentItem.title,
-            listingPrice:  currentItem.price,
-            listingImage:  currentItem.images?.[0] || '',
-            sellerId:      currentItem.sellerId,
-            sellerName:    currentItem.sellerName,
-            buyerId:       window.currentUser.uid,
-            buyerName:     window.currentProfile.name,
-            buyerEmail:    window.currentUser.email,
-            offerPrice:    Number(currentItem.price), // Full price
-            message:       "I am interested in buying this at the listed price.",
-            status:        'pending',
-            createdAt:     serverTimestamp()
-        });
-
-        showToast('Request sent to seller!', 'success');
-        closeModal('detailModal');
-
-    } catch (error) {
-        console.error('Request error:', error);
-        showToast('Failed to send request', 'error');
-    } finally {
-        btn.disabled = false;
-        btn.textContent = 'Request to Buy';
-    }
+    showToast("Request sent to seller!", "success");
+    closeModal("detailModal");
+  } catch (error) {
+    console.error("Request error:", error);
+    showToast("Failed to send request", "error");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Request to Buy";
+  }
 };
 
 // ── CHIP FILTER ──────────────────────────────────────────────────
