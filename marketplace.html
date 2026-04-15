@@ -51,33 +51,44 @@
         .detail-inner {
           grid-template-columns: 1fr;
         }
+
         .detail-img-col {
           aspect-ratio: 16/9;
-          min-height: unset; /* ← min-height override */
+          min-height: unset;
           width: 100%;
-          overflow: hidden; /* ← contain karo */
+          position: relative;
+          overflow: hidden; /* This acts as the outer container */
         }
+
         .detail-modal {
           max-width: 100%;
-          margin: 0;
+          margin: 10px; /* Gives a tiny bit of breathing room on the edges */
           border-radius: var(--r-lg);
         }
+
         .img-gallery {
           width: 100%;
+          height: 100%; /* Force gallery to fill the 16/9 col */
           overflow: hidden;
         }
+
         .img-track {
+          display: flex !important; /* Force flex for horizontal sliding */
           width: 100%;
-          overflow: hidden;
+          height: 100%;
+          /* REMOVED overflow: hidden here to allow images to sit side-by-side */
         }
+
         .img-track img {
           min-width: 100%;
           max-width: 100%;
+          height: 100% !important; /* This forces the image to fill the 16/9 height */
+          object-fit: cover; /* This ensures the bike isn't squashed */
           flex-shrink: 0;
         }
       }
       .detail-modal {
-        overflow: auto; /* ← marketplace.html internal style mein add kar */
+        overflow: hidden; /* ← marketplace.html internal style mein add kar */
       }
       .detail-price {
         font-family: "Syne", sans-serif;

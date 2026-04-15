@@ -204,8 +204,13 @@ window.openDetail = function (itemId) {
   let currentSlide = 0;
 
   const track = document.getElementById("imgTrack");
-  track.innerHTML = images.map((url) => `<img src="${url}" alt=""/>`).join("");
-
+  track.style.transform = `translateX(0%)`;
+  // Inside market.js openDetail function:
+  track.innerHTML = images
+    .map(
+      (url) => `<img src="${url}" alt="" style="width:100%; flex-shrink:0;">`,
+    )
+    .join("");
   window.goSlide = function (dir) {
     currentSlide = (currentSlide + dir + images.length) % images.length;
     track.style.transform = `translateX(-${currentSlide * 100}%)`;
