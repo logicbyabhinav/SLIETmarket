@@ -17,7 +17,7 @@ SLIET Market is a **serverless, zero-infrastructure-cost** web application that 
 
 Registration is gated exclusively to `@sliet.ac.in` email addresses. No outsiders. No spam. No hosting fees.
 
-**Live project:** [sliet-market-v2.web.app](https://sliet-market-v2.web.app) *(or your deployment URL)*
+**Live project:** [https://slietmarket.netlify.app/]
 
 ---
 
